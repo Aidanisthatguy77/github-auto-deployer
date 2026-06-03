@@ -1,0 +1,27 @@
+# Render Deployment Example
+# Best for: Web services, APIs, cron jobs, PostgreSQL
+
+name: Deploy to Render
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Trigger Render Deploy
+        run: |
+          curl -X POST "https://api.render.com/v1/blueprints/${{ secrets.RENDER_BLUEPRINT_ID }}/instances" \
+            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "branch": "${{ github.ref_name }}",
+              "clearCache": false
+            }'
+
+# Alternative: Use render.yaml for declarative setup
+# See: https://render.com/docs/blueprint-spec

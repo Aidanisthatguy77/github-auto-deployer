@@ -1,0 +1,188 @@
+name: Deploy to All Platforms
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: 'Select platform to deploy'
+        required: true
+        type: choice
+        options:
+          - vercel
+          - netlify
+          - render
+          - pages
+          - cloudflare
+          - fly
+
+jobs:
+  # ============================================
+  # VERCEL - Best for Next.js, React, Vue
+  # ============================================
+  deploy-vercel:
+    if: github.event.inputs.platform == 'vercel' || github.event_name != 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Deploy to Vercel
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          vercel-args: '--prod'
+
+  # ============================================
+  # NETLIFY - Great for static sites
+  # ============================================
+  deploy-netlify:
+    if: github.event.inputs.platform == 'netlify'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install & Build
+        run: |
+          npm ci
+          npm run build
+      
+      - name: Deploy to Netlify
+        uses: nwtgck/actions-netlify@v3.0
+        with:
+          publish-dir: ./dist
+          production-branch: main
+          production-deploy: true
+          deploy-message: "Deploy from GitHub Actions"
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+
+  # ============================================
+  # RENDER - Free web services + PostgreSQL
+  # ============================================
+  deploy-render:
+    if: github.event.inputs.platform == 'render'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Trigger Render Deploy
+        run: |
+          curl -X POST "https://api.render.com/v1/blueprints/${{ secrets.RENDER_BLUEPRINT_ID }}/instances" \
+            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{"branch": "${{ github.ref_name }}"}'
+
+  # ============================================
+  # GITHUB PAGES - 100% Free
+  # ============================================
+  deploy-pages:
+    if: github.event.inputs.platform == 'pages'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install & Build
+        run: |
+          npm ci
+          npm run build
+      
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+      
+      - name: Upload Artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./dist
+          
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+  # ============================================
+  # CLOUDFLARE PAGES - Unlimited builds
+  # ============================================
+  deploy-cloudflare:
+    if: github.event.inputs.platform == 'cloudflare'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install & Build
+        run: |
+          npm ci
+          npm run build
+      
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: ${{ secrets.CLOUDFLARE_PROJECT_NAME }}
+          directory: ./dist
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+
+  # ============================================
+  # FLY.IO - Free Docker deployment
+  # ============================================
+  deploy-fly:
+    if: github.event.inputs.platform == 'fly'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Flyctl
+        uses: superfly/flyctl-actions/setup-flyctl@master
+      
+      - name: Deploy to Fly.io
+        run: |
+          flyctl deploy --app ${{ secrets.FLY_APP_NAME }} --token ${{ secrets.FLY_API_TOKEN }}
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+  # ============================================
+  # Notify on completion (all platforms)
+  # ============================================
+  notify:
+    needs: [deploy-vercel, deploy-netlify, deploy-render, deploy-pages, deploy-cloudflare, deploy-fly]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Success Notification
+        if: needs.*.result == 'success'
+        run: |
+          echo "✅ Deployment successful!"
+          # Add Slack/Discord notification here
+          # curl -X POST ${{ secrets.SLACK_WEBHOOK }} -d '{"text": "✅ Deployed!"}'
+      
+      - name: Failure Notification
+        if: needs.*.result == 'failure'
+        run: |
+          echo "❌ Deployment failed!"
+          # curl -X POST ${{ secrets.SLACK_WEBHOOK }} -d '{"text": "❌ Deployment failed!"}'
