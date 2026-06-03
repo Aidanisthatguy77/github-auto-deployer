@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🌉 Deploy Bridge - GitHub to Deployment, Automatic</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        :root {
+            --bg-dark: #0f0f23;
+            --bg-card: #1a1a2e;
+            --accent: #6366f1;
+            --accent-glow: #818cf8;
+            --success: #10b981;
+            --text: #e2e8f0;
+            --text-muted: #94a3b8;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        .hero {
+            text-align: center;
+            padding: 80px 20px;
+            position: relative;
+        }
+        
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 50%; transform: translateX(-50%);
+            width: 600px; height: 600px;
+            background: radial-gradient(circle, rgba(99,102,241,0.15) 0%, transparent 70%);
+            pointer-events: none;
+        }
+        
+        .logo { font-size: 64px; margin-bottom: 20px; }
+        
+        h1 {
+            font-size: 3rem;
+            font-weight: 800;
+            margin-bottom: 16px;
+            background: linear-gradient(135deg, #fff 0%, #a5b4fc 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .tagline {
+            font-size: 1.25rem;
+            color: var(--text-muted);
+            max-width: 600px;
+            margin: 0 auto 40px;
+        }
+        
+        .cta-buttons {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 14px 32px;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+        
+        .btn-primary {
+            background: var(--accent);
+            color: white;
+            box-shadow: 0 4px 20px rgba(99,102,241,0.4);
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 30px rgba(99,102,241,0.5);
+        }
+        
+        .btn-secondary {
+            background: var(--bg-card);
+            color: var(--text);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .btn-secondary:hover {
+            border-color: var(--accent);
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        
+        .section { padding: 60px 0; }
+        
+        .section-title {
+            text-align: center;
+            font-size: 2rem;
+            margin-bottom: 40px;
+        }
+        
+        .platforms {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+        }
+        
+        .platform-card {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 28px;
+            border: 1px solid rgba(255,255,255,0.05);
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .platform-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--accent);
+            box-shadow: 0 8px 30px rgba(99,102,241,0.2);
+        }
+        
+        .platform-icon {
+            font-size: 2.5rem;
+            margin-bottom: 16px;
+        }
+        
+        .platform-name {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        
+        .platform-desc {
+            color: var(--text-muted);
+            margin-bottom: 16px;
+            font-size: 0.95rem;
+        }
+        
+        .platform-tag {
+            display: inline-block;
+            background: rgba(16,185,129,0.1);
+            color: var(--success);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        
+        .how-it-works {
+            background: linear-gradient(180deg, var(--bg-dark) 0%, rgba(99,102,241,0.05) 100%);
+        }
+        
+        .steps {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            flex-wrap: wrap;
+            margin-bottom: 60px;
+        }
+        
+        .step {
+            text-align: center;
+            max-width: 200px;
+        }
+        
+        .step-number {
+            width: 50px; height: 50px;
+            background: var(--accent);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin: 0 auto 12px;
+        }
+        
+        .step-text { color: var(--text-muted); }
+        
+        .arrow {
+            font-size: 2rem;
+            color: var(--accent);
+            align-self: center;
+        }
+        
+        .workflow-preview {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 24px;
+            max-width: 700px;
+            margin: 0 auto;
+            overflow-x: auto;
+        }
+        
+        .workflow-preview pre {
+            font-family: 'Fira Code', monospace;
+            font-size: 0.85rem;
+            line-height: 1.6;
+            color: #a5b4fc;
+        }
+        
+        .comment { color: #6b7280; }
+        .key { color: #f472b6; }
+        .string { color: #34d399; }
+        
+        footer {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-muted);
+            border-top: 1px solid rgba(255,255,255,0.05);
+        }
+        
+        footer a { color: var(--accent); }
+        
+        .github-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 16px;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+        
+        .github-link:hover { color: var(--text); }
+        
+        @media (max-width: 768px) {
+            h1 { font-size: 2rem; }
+            .steps { flex-direction: column; align-items: center; }
+            .arrow { transform: rotate(90deg); }
+        }
+    </style>
+</head>
+<body>
+    <section class="hero">
+        <div class="logo">🌉</div>
+        <h1>Deploy Bridge</h1>
+        <p class="tagline">Push code to GitHub → Get deployed automatically. No more manual deployments. Ever.</p>
+        <div class="cta-buttons">
+            <a href="https://github.com/Aidanisthatguy77/github-auto-deployer" class="btn btn-primary" target="_blank">View on GitHub</a>
+            <a href="https://github.com/Aidanisthatguy77/github-auto-deployer/pull/1" class="btn btn-secondary" target="_blank">View PR</a>
+        </div>
+    </section>
+    
+    <section class="how-it-works section">
+        <div class="container">
+            <h2 class="section-title">How It Works</h2>
+            <div class="steps">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <strong>Push Code</strong>
+                    <p class="step-text">You push to GitHub</p>
+                </div>
+                <span class="arrow">→</span>
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <strong>Build</strong>
+                    <p class="step-text">GitHub Actions runs</p>
+                </div>
+                <span class="arrow">→</span>
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <strong>Deploy</strong>
+                    <p class="step-text">Auto-deploys to platform</p>
+                </div>
+                <span class="arrow">→</span>
+                <div class="step">
+                    <div class="step-number">4</div>
+                    <strong>Done! ✅</strong>
+                    <p class="step-text">Live in seconds</p>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <section class="section">
+        <div class="container">
+            <h2 class="section-title">Supported Platforms</h2>
+            <div class="platforms">
+                <div class="platform-card">
+                    <div class="platform-icon">▲</div>
+                    <div class="platform-name">Vercel</div>
+                    <div class="platform-desc">Best for Next.js, React, Vue, and serverless functions</div>
+                    <span class="platform-tag">100GB Free</span>
+                </div>
+                
+                <div class="platform-card">
+                    <div class="platform-icon">□</div>
+                    <div class="platform-name">Netlify</div>
+                    <div class="platform-desc">Great for static sites, Gatsby, Hugo, and JAMstack</div>
+                    <span class="platform-tag">100GB Free</span>
+                </div>
+                
+                <div class="platform-card">
+                    <div class="platform-icon">⧉</div>
+                    <div class="platform-name">GitHub Pages</div>
+                    <div class="platform-desc">Simple static sites, documentation, portfolios</div>
+                    <span class="platform-tag">100% Free</span>
+                </div>
+                
+                <div class="platform-card">
+                    <div class="platform-icon">☁</div>
+                    <div class="platform-name">Cloudflare Pages</div>
+                    <div class="platform-desc">Global CDN, unlimited builds, Workers integration</div>
+                    <span class="platform-tag">Unlimited</span>
+                </div>
+                
+                <div class="platform-card">
+                    <div class="platform-icon">✈</div>
+                    <div class="platform-name">Fly.io</div>
+                    <div class="platform-desc">Docker containers with persistent storage</div>
+                    <span class="platform-tag">3 VMs Free</span>
+                </div>
+                
+                <div class="platform-card">
+                    <div class="platform-icon">⚡</div>
+                    <div class="platform-name">Render</div>
+                    <div class="platform-desc">Web services, APIs, cron jobs, + free PostgreSQL</div>
+                    <span class="platform-tag">750hrs Free</span>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <section class="section">
+        <div class="container">
+            <h2 class="section-title">Quick Example</h2>
+            <div class="workflow-preview">
+                <pre><span class="comment"># .github/workflows/deploy.yml</span>
+<span class="key">name:</span> <span class="string">Deploy to Vercel</span>
+
+<span class="key">on:</span>
+  <span class="key">push:</span>
+    <span class="key">branches:</span> [<span class="string">main</span>]
+
+<span class="key">jobs:</span>
+  <span class="key">deploy:</span>
+    <span class="key">runs-on:</span> <span class="string">ubuntu-latest</span>
+    <span class="key">steps:</span>
+      - <span class="key">uses:</span> <span class="string">actions/checkout@v4</span>
+      - <span class="key">uses:</span> <span class="string">amondnet/vercel-action@v25</span>
+        <span class="key">with:</span>
+          <span class="key">vercel-token:</span> <span class="string">${{ secrets.VERCEL_TOKEN }}</span>
+          <span class="key">vercel-org-id:</span> <span class="string">${{ secrets.VERCEL_ORG_ID }}</span>
+          <span class="key">vercel-project-id:</span> <span class="string">${{ secrets.VERCEL_PROJECT_ID }}</span></pre>
+            </div>
+        </div>
+    </section>
+    
+    <footer>
+        <p>Built with ❤️ for developers who want to ship, not deploy.</p>
+        <a href="https://github.com/Aidanisthatguy77/github-auto-deployer" class="github-link" target="_blank">
+            ★ Star on GitHub
+        </a>
+    </footer>
+</body>
+</html>
